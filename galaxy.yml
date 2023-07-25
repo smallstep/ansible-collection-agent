@@ -1,0 +1,28 @@
+namespace: smallstep
+name: agent
+version: 0.0.1
+readme: README.md
+authors:
+- Tech Admin <techadmin@smallstep.com>
+description: Installs and configures the smallstep Agent.
+license:
+- Apache-2.0
+license_file: 'LICENSE.md'
+tags:
+  - smallstep
+  - step
+  - step-cli
+  - step-agent
+  - tls
+  - mtls
+  - pki
+  - certificates
+dependencies:
+  smallstep.agent: ">=0.0.1"
+  smallstep.cli: ">=0.0.1"
+  smallstep.sigstore: ">=0.0.1"
+repository: https://github.com/smallstep/ansible-collection-agent
+documentation: https://github.com/smallstep/ansible-collection-agent/README.md
+homepage: https://github.com/smallstep/ansible-collection-agent
+issues: https://github.com/smallstep/ansible-collection-agent/issues
+build_ignore: []

@@ -1,0 +1,107 @@
+---
+# tasks file for configure
+
+- name: Install polkit rules (Enterprise Linux and Fedora)
+  block:
+  - name: Ensure /etc/polkit-1/rules.d exists
+    ansible.builtin.file:
+      path: /etc/polkit-1/rules.d
+      state: directory
+
+  - name: Create /etc/polkit-1/rules.d/71-step-agent.rules
+    ansible.builtin.template:
+      src: 71-step-agent-redhat.rules.j2
+      dest: /etc/polkit-1/rules.d/71-step-agent.rules
+      owner: root
+      group: root
+      mode: 0644
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Install polkit rules (Debian 11+ and Ubuntu 21.04)
+  block:
+  - name: Ensure /etc/polkit-1/rules.d exists
+    ansible.builtin.file:
+      path: /etc/polkit-1/rules.d
+      state: directory
+
+  - name: Create /etc/polkit-1/rules.d/71-step-agent.rules
+    ansible.builtin.template:
+      src: 71-step-agent-debian.rules.j2
+      dest: /etc/polkit-1/rules.d/71-step-agent.rules
+      owner: root
+      group: root
+      mode: 0644
+  when: (ansible_facts['distribution'] == "Debian" and ansible_facts['distribution_major_version'] > "10") or (ansible_facts['distribution'] == "Ubuntu" and ansible_facts['distribution_major_version'] > "21.04")
+
+- name: Install PolicyKit rules (Debian <= 10 and Ubuntu <= 21.04)
+  block:
+  - name: Ensure /etc/polkit-1/localauthority/50-local.d exists
+    ansible.builtin.file:
+      path: /etc/polkit-1/localauthority/50-local.d
+      state: directory
+
+  - name: Create /etc/polkit-1/localauthority/50-local.d/71-step-agent.pkla
+    ansible.builtin.template:
+      src: 71-step-agent-debian.pkla.j2
+      dest: /etc/polkit-1/localauthority/50-local.d/71-step-agent.pkla
+      owner: root
+      group: root
+      mode: 0644
+  when: (ansible_facts['distribution'] == "Debian" and ansible_facts['distribution_major_version'] <= "10") or (ansible_facts['distribution'] == "Ubuntu" and ansible_facts['distribution_major_version'] <= "21.04")
+
+- name: Create /etc/step-agent directory
+  ansible.builtin.file:
+    path: /etc/step-agent/
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Create /etc/step-agent/agent.yml
+  ansible.builtin.template:
+    src: agent.yml.j2
+    dest: /etc/step-agent/agent.yml
+    owner: root
+    group: root
+    mode: 0644
+  notify: step-agent reload
+
+- name: Create step-agent.service
+  ansible.builtin.template:
+    src: step-agent.service.j2
+    dest: /etc/systemd/system/step-agent.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Create step-agent.service.d directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/step-agent.service.d/
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Create step-agent.service drop-in if step_agent_user_privileged is True
+  ansible.builtin.template:
+    src: step_agent_privileged.conf.j2
+    dest: /etc/systemd/system/step-agent.service.d/override.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify: step-agent restarted
+  when: step_agent_user_privileged
+
+- name: Remove step-agent.service drop-in if step_agent_user_privileged is False
+  ansible.builtin.file:
+    path: /etc/systemd/system/step-agent.service.d/override.conf
+    state: absent
+  notify: step-agent restarted
+  when: not step_agent_user_privileged
+
+- name: Start step-agent.service and ensure it is enabled
+  ansible.builtin.systemd:
+    name: step-agent
+    daemon_reload: true
+    enabled: true
+    state: started

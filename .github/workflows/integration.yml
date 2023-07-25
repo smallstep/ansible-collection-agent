@@ -1,0 +1,51 @@
+name: Run Ansible Integration Tests
+
+on:
+  push:
+    tags-ignore:
+    - 'v*'
+    branches:
+    - "main"
+  pull_request:
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ansible_collections/smallstep/cli
+
+    steps:
+      - name: Clone the repo
+        uses: actions/checkout@v3
+        with:
+          path: ansible_collections/smallstep/cli
+
+      - name: Clone Ansible collection dependancy (smallstep.sigstore)
+        uses: actions/checkout@v3
+        with:
+          repository: https://github.com/smallstep/ansible-collection-sigstore.git
+          path: ansible_collections/smallstep/sigstore
+
+      - name: Clone Ansible collection dependancy (ansible.windows)
+        uses: actions/checkout@v3
+        with:
+          repository: https://github.com/ansible-collections/ansible.windows.git
+          path: ansible_collections/ansible/windows
+
+      - name: Clone Ansible collection dependancy (smallstep.cli)
+        uses: actions/checkout@v3
+        with:
+          repository: https://github.com/smallstep/ansible-collection-cli.git
+          path: ansible_collections/smallstep/cli
+
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+
+      - name: Install Ansible
+        run: pip install ansible
+
+      - name: Run the integration tests
+        run: ansible-test integration

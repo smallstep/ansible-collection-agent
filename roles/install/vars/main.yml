@@ -1,0 +1,18 @@
+---
+# vars file for install
+step_agent_arch_map:
+  aarch64: arm64
+  armv5l: armv5
+  armv6l: armv6
+  armv7l: armv7
+  armv8l: arm64
+  i386: 386
+  i686: 386
+  mips: mips_hardfloat
+  mips64: mips64_hardfloat
+  x86_64: amd64
+step_agent_archive_map:
+  darwin: tar.gz
+  freebsd: tar.gz
+  linux: tar.gz
+  windows: zip

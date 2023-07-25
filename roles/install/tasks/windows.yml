@@ -1,0 +1,7 @@
+---
+- name: Create temporary step agent download directory (Windows)
+  ansible.windows.win_tempfile:
+    state: directory
+    prefix: step-agent-download-
+  register: step_agent_tmpdir
+  when: ansible_system == "Windows"

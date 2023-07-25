@@ -1,0 +1,11 @@
+---
+# handlers file for configure
+- name: step-agent reload
+  service:
+    name: step-agent
+    state: reloaded
+
+- name: step-agent restart
+  service:
+    name: step-agent
+    state: restarted

@@ -1,0 +1,82 @@
+---
+# tasks file for install
+- name: Check for step_agent_version variable and set it to the latest version if not set
+  block:
+    - name: Check GitHub for the latest release of step-agent-plugin
+      become: no
+      delay: 10
+      delegate_to: localhost
+      retries: 5
+      run_once: True
+      ansible.builtin.uri:
+        body_format: json
+        return_content: True
+        url: https://api.github.com/repos/smallstep/step-agent-plugin-releases/releases/latest
+      register: step_agent_github_response
+    - name: Set step_agent_version fact to the latest release
+      ansible.builtin.set_fact:
+        step_agent_version: "{{ step_agent_github_response.json.tag_name }}"
+  when: not step_agent_version
+
+- name: Set step_agent_arch and step_agent_archive_format facts
+  ansible.builtin.set_fact:
+    step_agent_arch: "{{ step_agent_arch_map[ansible_architecture] }}"
+    step_agent_archive_format: "{{ step_agent_archive_map[ansible_system | lower] }}"
+
+- name: Create temporary step-agent-plugin download directory
+  ansible.builtin.tempfile:
+    state: directory
+    prefix: step-agent-download-
+  register: step_agent_tmpdir
+  when: not ansible_system == "Windows"
+
+- name: Include Windows tasks
+  ansible.builtin.include_tasks: windows.yaml
+  when: ansible_system == "Windows"
+
+- name: Set step-agent-plugin file name fact
+  ansible.builtin.set_fact:
+    step_agent_filename: "step-agent-plugin_{{ ansible_system | lower }}_{{ step_agent_version | replace('v','') }}_{{ step_agent_arch }}.{{ step_agent_archive_format }}"
+
+- name: Download step-agent-plugin archive
+  ansible.builtin.get_url:
+    url: "{{ step_agent_download_url }}/{{ step_agent_version }}/{{ step_agent_filename }}"
+    dest: "{{ step_agent_tmpdir.path }}"
+    checksum: sha256:{{ step_agent_download_url }}/{{ step_agent_version }}/checksums.txt
+
+- name: Download step-agent-plugin pem and sig files
+  ansible.builtin.get_url:
+    url: "{{ step_agent_download_url }}/{{ step_agent_version }}/{{ item }}"
+    dest: "{{ step_agent_tmpdir.path }}"
+  with_items:
+    - "{{ step_agent_filename }}.pem"
+    - "{{ step_agent_filename }}.sig"
+
+- name: Verify the step-agent-plugin archive using Sigstore and fail if it doesn't pass verification
+  ansible.builtin.include_role:
+    name: smallstep.sigstore.verify_artifact
+  vars:
+    verify_artifact_file: "{{ step_agent_tmpdir.path }}/{{ step_agent_filename }}"
+    verify_artifact_certificate: "{{ step_agent_tmpdir.path }}/{{ step_agent_filename }}.pem"
+    verify_artifact_signature: "{{ step_agent_tmpdir.path }}/{{ step_agent_filename }}.sig"
+    verify_artifact_cert_identity: "https://github.com/smallstep/cli/.github/workflows/release.yml@refs/tags/{{ step_agent_version }}"
+    verify_artifact_cert_oidc_issuer: "https://token.actions.githubusercontent.com"
+    verify_artifact_fail_run: True
+    verify_artifact_pip_sigstore_install: True
+    verify_artifact_pip_sigstore_version: 1.1.2
+  when: step_agent_verify_signature
+
+- name: Install step-agent-plugin binary
+  ansible.builtin.unarchive:
+    src: "{{ step_agent_tmpdir.path }}/{{ step_agent_filename }}"
+    dest: "{{ step_agent_install_path }}"
+    extra_opts:
+      - --strip-components=1
+    remote_src: yes
+  when: not ansible_system == "Windows"
+
+- name: Remove temporary step-agent-plugin download directory
+  ansible.builtin.file:
+    path: "{{ step_agent_tmpdir.path }}"
+    state: absent
+  when: step_agent_tmpdir.path is defined
