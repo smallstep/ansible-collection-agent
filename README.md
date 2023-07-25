@@ -71,7 +71,7 @@ Here's an example playbook for Enterprise Linux based servers. (Fedora, RHEL, Ce
 
 ## Playbook: smallstep.agent.install_step_agent
 
-Assuming you have the following requirements: Python 3.8 or greater, `pip` and `pip install sigstore` installed on your on servers, you may easily run the collection playbook `smallstep.agent.install_step_agent` to install the most recent version of step CLI.
+Assuming you have the requirements listed above, run this collection playbook to install the most recent version of `step-agent-plugin`.
 
 ### Install the most recent version of step agent
 
