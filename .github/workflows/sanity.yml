@@ -9,7 +9,7 @@ on:
   pull_request:
 
 jobs:
-  integration:
+  sanity:
     runs-on: ubuntu-latest
     defaults:
       run:
