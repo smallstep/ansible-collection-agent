@@ -1,6 +1,5 @@
 ---
 # defaults file for install
-step_agent_version: # Example: v0.0.1. Leave unset for the latest release off of GitHub
-step_agent_install_path: /usr/local/bin
-step_agent_download_url: https://dl.smallstep.com/step-agent-plugin
-step_agent_verify_signature: True
+smallstep_agent_version: # Example: v0.0.1. Leave unset for the latest release off of GitHub
+smallstep_agent_download_url:
+smallstep_agent_package_format:

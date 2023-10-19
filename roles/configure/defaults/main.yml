@@ -1,8 +1,2 @@
 ---
 # defaults file for configure
-step_agent_team: # (Required) Your team ID.
-step_agent_fingerprint: # (Required) Your Smallstep Agents CA fingerprint
-step_agent_ca_url: # (Optional) The agent CA URL. Defaults to agents.<team-id>.ca.smallstep.com
-step_agent_provisioner: # (Optional) The provisioner to use. Defaults to acme-da
-step_agent_user: step-agent
-step_agent_user_privileged: False

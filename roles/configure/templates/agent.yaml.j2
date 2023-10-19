@@ -1,0 +1,14 @@
+# Required flags
+## Your team ID
+team: {{ smallstep_team }}
+## Your CA fingerprint
+fingerprint: {{ smallstep_fingerprint }}
+
+{% if smallstep_api_host %}
+## Required for run anywhere installs
+api-url: https://{{ smallstep_api_host }}/api
+{% if smallstep_base_domain %}
+ca-url: https://agents.{{ smallstep_team }}.ca.{{ smallstep_base_domain | join('.') }}
+attestation-ca-url: https://att.{{ smallstep_base_domain | join('.') }}/1.0
+{% endif %}
+{% endif %}

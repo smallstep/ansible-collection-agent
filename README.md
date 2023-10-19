@@ -1,6 +1,8 @@
 # Ansible Collection - smallstep.agent
 
-This collection provides the `smallstep.agent.install`, `smallstep.agent.configure` roles and `smallstep.agent.install_step_agent` playbook which can be used to install and configure the [Smallstep Agent](https://smallstep.com) on your servers. It uses the [smallstep.sigstore](https://github.com/smallstep/ansible-collection-sigstore) collection to verify the [Sigstore](https://sigstore.dev/) signatures which Smallstep uses to sign our software artifacts.
+This collection provides the `smallstep.agent.install`, `smallstep.agent.configure` roles and `smallstep.agent.install_step_agent` playbook which can be used to install and configure the [Smallstep Agent](https://smallstep.com) on your servers. It uses the [smallstep.sigstore](https://github.com/smallstep/ansible-collection-sigstore) collection to verify the [Sigstore](https://sigstore.dev/) signatures which Smallstep uses to sign our software artifacts for binary installs only.
+
+For Fedora, EL, Debian and Ubuntu installs, it will default to using our system packages (RPM and Deb) over installing the binary. Please note the binary install only installs the binary. It does not install all of the other supporting files (systemd unit, polkit policy rules etc..) and we highly recommend that you use the officially supported Linux distributions below with the system packages.
 
 This collection currently supports:
 
@@ -14,17 +16,15 @@ This collection currently supports:
 * `ansible-galaxy collection install smallstep.sigstore` on control node
 * Python 3.8 or greater on servers
 * `pip` installed on servers
-* `pip install sigstore` on servers
+* `pip install sigstore` on servers that are using the binary install
 
 ## Role: smallstep.agent.install
 
 ### smallstep.agent.install Role variables
 
 ```yaml
-step_agent_version: # (Optional) Format: v0.0.1. Default: latest version
-step_agent_install_path: # (Optional) Default: /usr/local/bin
-step_agent_download_url: # (Optional) Default: https://dl.smallstep.com/step-agent-plugin
-step_agent_verify_signature: # (Optional) Default: True
+smallstep_agent_version: # (Optional) Format: v0.0.1. Default: latest version
+smallstep_agent_download_url: # (Optional) Default: https://dl.smallstep.com/step-agent-plugin
 ```
 
 ## Role: smallstep.agent.configure
@@ -32,17 +32,39 @@ step_agent_verify_signature: # (Optional) Default: True
 ### smallstep.agent.configure Role variables
 
 ```yaml
-step_agent_team: YourTeamID # (Required) Your team ID.
-step_agent_fingerprint: yourCAfingerprintHere22ba483f7d97a7e43f92d7d4eb084d52xfoofoofoo # (Required) Your Smallstep Agents CA fingerprint
-step_agent_ca_url: # (Optional) The agent CA URL. Defaults to agents.<team-id>.ca.smallstep.com
-step_agent_provisioner: # (Optional) The provisioner to use. Defaults to acme-da
-step_agent_user: # (Optional) The systemd unit dynamic username. Defaults to step-agent
-step_agent_user_privileged: # (Optional) Add SupplementaryGroups=root so the step-agent can send Signals to processes. Defaults to False
+smallstep_api_token: eyJhb...
+smallstep_collections:
+  - collection_slug: hotdog-staging
+    display_name: "Hotdog App staging"
+    admin_emails:
+      - jdoss@smallstep.com
+    device_type:
+      aws_vm:
+        disable_custom_sans: False
+        accounts:
+        - "123456789011"
+    state: present
+smallstep_workloads:
+  - admin_emails:
+      - jdoss@smallstep.com
+    display_name: Hotdog App Nginx
+    collection_slug: hotdog-staging
+    workload_slug: "hotdog-nginx-staging"
+    workload_type: nginx
+    state: present
+smallstep_collection_instances:
+  - instance_id: i-0d69ab001748ab4444
+    collection_slug: "{{ smallstep_collection }}"
+    instance_metadata:
+        name: stage-001
+        role: nginx
+        location: us-east-2
+    state: present
 ```
 
 ### Example Playbook
 
-Here's an example playbook for Enterprise Linux based servers. (Fedora, RHEL, CentOS Stream, Rocky Linux, Alma Linux, etc):
+Here's an example playbook for Enterprise Linux based servers. (Fedora, RHEL, CentOS Stream, Rocky Linux, Alma Linux, etc) on AWS:
 
 ```yaml
 ---
@@ -65,8 +87,112 @@ Here's an example playbook for Enterprise Linux based servers. (Fedora, RHEL, Ce
     - role: smallstep.agent.install
     - role: smallstep.agent.configure
       vars:
-        step_agent_team: YourTeamID
-        step_agent_fingerprint: ourCAfingerprintHere22ba483f7d97a7e43f92d7d4eb084d52xfoofoofoo
+        smallstep_api_token: eyJhb...
+        smallstep_collection: "hotdog-staging"
+        smallstep_collections:
+          - collection_slug: "{{ smallstep_collection }}"
+            display_name: "Hotdog App staging"
+            admin_emails:
+              - jdoss@smallstep.com
+            device_type:
+              aws_vm:
+                disable_custom_sans: False
+                accounts:
+                - "123456789011"
+            state: present
+        smallstep_workloads:
+          - admin_emails:
+              - jdoss@smallstep.com
+            device_metadata_key_sans:
+              - Name
+            display_name: Hotdog Staging Nginx
+            hooks:
+                renew:
+                    after: ["echo done"]
+                    before: ["echo start"]
+                    on_error: ["echo failed"]
+                    shell: "/bin/bash"
+                sign:
+                    after: ["echo done"]
+                    before: ["echo start"]
+                    on_error: ["echo failed"]
+                    shell: "/bin/bash"
+            key_info:
+                format: "DEFAULT"
+                type: "DEFAULT"
+            reload_info:
+                method: "DBUS"
+                unit_name: "nginx.service"
+            collection_slug: "{{ smallstep_collection }}"
+            workload_slug: "hotdog-nginx-staging"
+            static_sans:
+                - staging.hotdog.app
+                - staging.nginx.hotdog.app
+                - nginx.hotdog.app
+            workload_type: nginx
+            state: present
+          - admin_emails:
+              - jdoss@smallstep.com
+            certificate_info:
+                crt_file: "/etc/redis/tls/redis.crt"
+                duration: "24h0m0s"
+                gid: 1001
+                key_file: "/etc/redis/tls/redis.key"
+                type: "X509"
+                uid: 1001
+            device_metadata_key_sans:
+              - Name
+            display_name: Hotdog Staging Redis
+            hooks:
+                renew:
+                    after: ["echo done"]
+                    before: ["echo start"]
+                    on_error: ["echo failed"]
+                    shell: "/bin/bash"
+                sign:
+                    after: ["echo done"]
+                    before: ["echo start"]
+                    on_error: ["echo failed"]
+                    shell: "/bin/bash"
+            key_info:
+                format: "DEFAULT"
+                type: "DEFAULT"
+            reload_info:
+                method: "DBUS"
+                unit_name: "redis.service"
+            collection_slug: "{{ smallstep_collection }}"
+            workload_slug: "hotdog-staging-redis"
+            static_sans:
+                - staging.hotdog.app
+                - staging.redis.hotdog.app
+                - redis.hotdog.app
+            workload_type: redis
+            state: present
+        smallstep_collection_instances:
+          - instance_id: i-0d69ab001748ab4444
+            collection_slug: "{{ smallstep_collection }}"
+            instance_metadata:
+                name: stage-001
+                role: staging
+                location: us-east-2
+                smallstep_collection: "{{ smallstep_collection }}"
+            state: present
+          - instance_id: i-0d69ab001748a5555
+            collection_slug: "{{ smallstep_collection }}"
+            instance_metadata:
+                name: stage-002
+                role: staging
+                location: us-east-2
+                smallstep_collection: "{{ smallstep_collection }}"
+            state: present
+          - instance_id: i-0d69ab001748a6666
+            collection_slug: "{{ smallstep_collection }}"
+            instance_metadata:
+                name: stage-003
+                role: staging
+                location: us-east-2
+                smallstep_collection: "{{ smallstep_collection }}"
+            state: present
 ```
 
 ## Playbook: smallstep.agent.install_step_agent
@@ -76,9 +202,7 @@ Assuming you have the requirements listed above, run this collection playbook to
 ### Install the most recent version of step agent
 
 ```bash
-export STEP_AGENT_TEAM=myteam
-export STEP_AGENT_FINGERPRINT=yourCAfingerprintf03da2ba483f7d97a7e43f92d7d4eb084d52xfoofoofoo
-ansible-playbook smallstep.agent.install_step_agent -i ansible_inventory -e "step_agent_team=${TEAM}" -e "step_agent_fingerprint=${CA_FINGERPRINT}"`
+ansible-playbook smallstep.agent.install_step_agent -i ansible_inventory`
 ```
 
 ## Local development
@@ -129,7 +253,13 @@ ansible-galaxy collection build --output-path /tmp --force
 ansible-galaxy collection install /tmp/smallstep-agent-0.0.1.tar.gz --force
 ```
 
-## Local uninstall
+### Symlink your development env to
+
+```bash
+ln -s /path/to/development/ansible_collections/smallstep/agent ~/.ansible/collections/ansible_collections/smallstep/agent
+```
+
+## Local uninstall or remove symlink
 
 ```bash
 rm -rf ~/.ansible/collections/ansible_collections/smallstep/agent/

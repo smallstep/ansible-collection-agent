@@ -11,8 +11,3 @@ step_agent_arch_map:
   mips: mips_hardfloat
   mips64: mips64_hardfloat
   x86_64: amd64
-step_agent_archive_map:
-  darwin: tar.gz
-  freebsd: tar.gz
-  linux: tar.gz
-  windows: zip

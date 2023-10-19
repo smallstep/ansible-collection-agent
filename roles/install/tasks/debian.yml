@@ -1,0 +1,7 @@
+---
+# Tasks for Debian based distributions
+
+- name: Install the step-agent-plugin Deb package
+  ansible.builtin.apt:
+    deb: "{{ smallstep_agent_download_url }}"
+    state: present

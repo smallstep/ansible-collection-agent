@@ -10,4 +10,3 @@
   roles:
     - role: smallstep.cli.install
     - role: smallstep.agent.install
-    - role: smallstep.agent.configure

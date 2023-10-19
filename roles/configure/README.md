@@ -13,17 +13,39 @@ This role currently supports:
 
 * Python 3.8 or greater on servers
 * `pip` installed on servers
-* `pip install sigstore` on servers
+* `pip install sigstore` on servers if using the binary install
 
 ## Role Variables
 
 ```yaml
-step_agent_team: # (Required) Your team ID.
-step_agent_fingerprint: # (Required) Your Smallstep Agents CA fingerprint
-step_agent_ca_url: # (Optional) The agent CA URL. Defaults to agents.<team-id>.ca.smallstep.com
-step_agent_provisioner: # (Optional) The provisioner to use. Defaults to acme-da
-step_agent_user: step-agent
-step_agent_user_privileged: False
+smallstep_api_token: eyJhb...
+smallstep_collections:
+  - collection_slug: hotdog-staging
+    display_name: "Hotdog App staging"
+    admin_emails:
+      - jdoss@smallstep.com
+    device_type:
+      aws_vm:
+        disable_custom_sans: False
+        accounts:
+        - "123456789011"
+    state: present
+smallstep_workloads:
+  - admin_emails:
+      - jdoss@smallstep.com
+    display_name: Hotdog App Nginx
+    collection_slug: hotdog-staging
+    workload_slug: "hotdog-nginx-staging"
+    workload_type: nginx
+    state: present
+smallstep_collection_instances:
+  - instance_id: i-0d69ab001748ab4444
+    collection_slug: "{{ smallstep_collection }}"
+    instance_metadata:
+        name: stage-001
+        role: nginx
+        location: us-east-2
+    state: present
 ```
 
 ## Example Playbook
@@ -51,12 +73,112 @@ Here's an example playbook for Enterprise Linux based servers. (Fedora, RHEL, Ce
     - role: smallstep.agent.install
     - role: smallstep.agent.configure
       vars:
-        step_agent_team: YourTeamID
-        step_agent_fingerprint: ourCAfingerprintHere22ba483f7d97a7e43f92d7d4eb084d52xfoofoofoo
-        # step_agent_ca_url: # (Optional) The agent CA URL. Defaults to agents.<team-id>.ca.smallstep.com
-        # step_agent_provisioner: # (Optional) The provisioner to use. Defaults to acme-da
-        # step_agent_user: # (Optional) The systemd unit dynamic username. Defaults to step-agent
-        # step_agent_user_privileged: # (Optional) Add SupplementaryGroups=root so the step-agent can send Signals to processes. Defaults to False
+        smallstep_api_token: eyJhb...
+        smallstep_collection: "hotdog-staging"
+        smallstep_collections:
+          - collection_slug: "{{ smallstep_collection }}"
+            display_name: "Hotdog App staging"
+            admin_emails:
+              - jdoss@smallstep.com
+            device_type:
+              aws_vm:
+                disable_custom_sans: False
+                accounts:
+                - "123456789011"
+            state: present
+        smallstep_workloads:
+          - admin_emails:
+              - jdoss@smallstep.com
+            device_metadata_key_sans:
+              - Name
+            display_name: Hotdog Staging Nginx
+            hooks:
+                renew:
+                    after: ["echo done"]
+                    before: ["echo start"]
+                    on_error: ["echo failed"]
+                    shell: "/bin/bash"
+                sign:
+                    after: ["echo done"]
+                    before: ["echo start"]
+                    on_error: ["echo failed"]
+                    shell: "/bin/bash"
+            key_info:
+                format: "DEFAULT"
+                type: "DEFAULT"
+            reload_info:
+                method: "DBUS"
+                unit_name: "nginx.service"
+            collection_slug: "{{ smallstep_collection }}"
+            workload_slug: "hotdog-nginx-staging"
+            static_sans:
+                - staging.hotdog.app
+                - staging.nginx.hotdog.app
+                - nginx.hotdog.app
+            workload_type: nginx
+            state: present
+          - admin_emails:
+              - jdoss@smallstep.com
+            certificate_info:
+                crt_file: "/etc/redis/tls/redis.crt"
+                duration: "24h0m0s"
+                gid: 1001
+                key_file: "/etc/redis/tls/redis.key"
+                type: "X509"
+                uid: 1001
+            device_metadata_key_sans:
+              - Name
+            display_name: Hotdog Staging Redis
+            hooks:
+                renew:
+                    after: ["echo done"]
+                    before: ["echo start"]
+                    on_error: ["echo failed"]
+                    shell: "/bin/bash"
+                sign:
+                    after: ["echo done"]
+                    before: ["echo start"]
+                    on_error: ["echo failed"]
+                    shell: "/bin/bash"
+            key_info:
+                format: "DEFAULT"
+                type: "DEFAULT"
+            reload_info:
+                method: "DBUS"
+                unit_name: "redis.service"
+            collection_slug: "{{ smallstep_collection }}"
+            workload_slug: "hotdog-staging-redis"
+            static_sans:
+                - staging.hotdog.app
+                - staging.redis.hotdog.app
+                - redis.hotdog.app
+            workload_type: redis
+            state: present
+        smallstep_collection_instances:
+          - instance_id: i-0d69ab001748ab4444
+            collection_slug: "{{ smallstep_collection }}"
+            instance_metadata:
+                name: stage-001
+                role: nginx
+                location: us-east-2
+                smallstep_collection: "{{ smallstep_collection }}"
+            state: present
+          - instance_id: i-0d69ab001748a5555
+            collection_slug: "{{ smallstep_collection }}"
+            instance_metadata:
+                name: stage-002
+                role: nginx
+                location: us-east-2
+                smallstep_collection: "{{ smallstep_collection }}"
+            state: present
+          - instance_id: i-0d69ab001748a6666
+            collection_slug: "{{ smallstep_collection }}"
+            instance_metadata:
+                name: stage-003
+                role: nginx
+                location: us-east-2
+                smallstep_collection: "{{ smallstep_collection }}"
+            state: present
 ```
 
 ## Author Information

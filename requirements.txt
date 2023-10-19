@@ -1,0 +1,1 @@
+smallstep-python==v0.1.1

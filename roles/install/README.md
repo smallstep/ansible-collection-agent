@@ -13,15 +13,13 @@ This role currently supports:
 
 * Python 3.8 or greater on servers
 * `pip` installed on servers
-* `pip install sigstore` on servers
+* `pip install sigstore` on servers that are using the binary install
 
 ## Role Variables
 
 ```yaml
-step_agent_version: # (Optional) Format: v0.0.1. Default: latest version
-step_agent_install_path: # (Optional) Default: /usr/local/bin
-step_agent_download_url: # (Optional) Default: https://dl.smallstep.com/step-agent-plugin
-step_agent_verify_signature: # (Optional) Default: True
+smallstep_agent_version: # (Optional) Format: v0.0.1. Default: latest version
+smallstep_agent_download_url: # (Optional) Default: https://dl.smallstep.com/step-agent-plugin
 ```
 
 ## Example Playbook

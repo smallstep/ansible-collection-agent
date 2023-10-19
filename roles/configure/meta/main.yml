@@ -1,6 +1,6 @@
 galaxy_info:
   author: Smallstep Engineering <techadmin@smallstep.com>
-  description: Configure the smallstep agent
+  description: Configure the Smallstep agent
   company: Smallstep Labs, Inc.
 
   license: Apache-2.0
@@ -10,7 +10,6 @@ galaxy_info:
   platforms:
   - name: Fedora
     versions:
-    - 37
     - 38
     - 39
     - rawhide
@@ -27,8 +26,8 @@ galaxy_info:
   - name: Ubuntu
     versions:
       - 18.04.6
-      - 22.04.2
       - 20.04.6
+      - 22.04.2
   - name: Archlinux
     versions:
       - all

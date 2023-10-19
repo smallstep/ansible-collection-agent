@@ -1,103 +1,80 @@
 ---
 # tasks file for configure
 
-- name: Install polkit rules (Enterprise Linux and Fedora)
-  block:
-  - name: Ensure /etc/polkit-1/rules.d exists
-    ansible.builtin.file:
-      path: /etc/polkit-1/rules.d
-      state: directory
+- name: Create Smallstep collection
+  local_action:
+        module: smallstep.agent.collection
+        api_host: "{{ smallstep_api_host | default(omit) }}"
+        api_token: "{{ smallstep_api_token }}"
+        device_type: "{{ item.device_type }}"
+        admin_emails: "{{ item.admin_emails }}"
+        display_name: "{{ item.display_name }}"
+        collection_slug: "{{ item.collection_slug }}"
+        state: "{{ item.state | default('present') }}"
+  loop:
+    "{{ smallstep_collections }}"
+  run_once: True
+  become: False
+  register: smallstep_collection_create
 
-  - name: Create /etc/polkit-1/rules.d/71-step-agent.rules
-    ansible.builtin.template:
-      src: 71-step-agent-redhat.rules.j2
-      dest: /etc/polkit-1/rules.d/71-step-agent.rules
-      owner: root
-      group: root
-      mode: 0644
-  when: ansible_facts['os_family'] == "RedHat"
+- name: Create Smallstep workload
+  local_action:
+        module: smallstep.agent.workload
+        admin_emails: "{{ item.admin_emails }}"
+        api_host: "{{ smallstep_api_host | default(omit) }}"
+        api_token: "{{ smallstep_api_token }}"
+        certificate_info: "{{ item.certificate_info | default(omit) }}"
+        collection_slug: "{{ item.collection_slug }}"
+        device_metadata_key_sans: "{{ item.device_metadata_key_sans | default(omit) }}"
+        hooks: "{{ item.hooks | default(omit) }}"
+        key_info: "{{ item.key_info | default(omit) }}"
+        display_name: "{{ item.display_name }}"
+        reload_info: "{{ item.reload_info | default(omit) }}"
+        static_sans: "{{ item.static_sans | default(omit) }}"
+        workload_slug: "{{ item.workload_slug }}"
+        workload_type: "{{ item.workload_type }}"
+        state: "{{ item.state | default('present') }}"
+  loop:
+    "{{ smallstep_workloads }}"
+  run_once: True
+  become: False
+  register: smallstep_workload_create
 
-- name: Install polkit rules (Debian 11+ and Ubuntu 21.04)
-  block:
-  - name: Ensure /etc/polkit-1/rules.d exists
-    ansible.builtin.file:
-      path: /etc/polkit-1/rules.d
-      state: directory
+- name: Create Smallstep collection instances
+  local_action:
+        module: smallstep.agent.instance
+        api_host: "{{ smallstep_api_host | default(omit) }}"
+        api_token: "{{ smallstep_api_token }}"
+        instance_id: "{{ item.instance_id }}"
+        collection_slug: "{{ item.collection_slug }}"
+        instance_metadata: "{{ item.instance_metadata }}"
+        state: "{{ item.state | default('present') }}"
+  loop:
+    "{{ smallstep_collection_instances }}"
+  run_once: True
+  become: False
+  register: smallstep_collection_create_instance
 
-  - name: Create /etc/polkit-1/rules.d/71-step-agent.rules
-    ansible.builtin.template:
-      src: 71-step-agent-debian.rules.j2
-      dest: /etc/polkit-1/rules.d/71-step-agent.rules
-      owner: root
-      group: root
-      mode: 0644
-  when: (ansible_facts['distribution'] == "Debian" and ansible_facts['distribution_major_version'] > "10") or (ansible_facts['distribution'] == "Ubuntu" and ansible_facts['distribution_major_version'] > "21.04")
+- name: Set smallstep_base_domain fact
+  set_fact:
+    smallstep_base_domain: "{{  smallstep_api_host.split('.')[1:] | lower }}"
+  when: smallstep_api_host
+  run_once: True
 
-- name: Install PolicyKit rules (Debian <= 10 and Ubuntu <= 21.04)
-  block:
-  - name: Ensure /etc/polkit-1/localauthority/50-local.d exists
-    ansible.builtin.file:
-      path: /etc/polkit-1/localauthority/50-local.d
-      state: directory
+- name: Set agent.yaml facts
+  ansible.builtin.set_fact:
+    smallstep_fingerprint: "{{ smallstep_collection_create.results[0].smallstep_collection.fingerprint }}"
+    smallstep_team: "{{ smallstep_collection_create.results[0].smallstep_collection.team }}"
+  run_once: True
 
-  - name: Create /etc/polkit-1/localauthority/50-local.d/71-step-agent.pkla
-    ansible.builtin.template:
-      src: 71-step-agent-debian.pkla.j2
-      dest: /etc/polkit-1/localauthority/50-local.d/71-step-agent.pkla
-      owner: root
-      group: root
-      mode: 0644
-  when: (ansible_facts['distribution'] == "Debian" and ansible_facts['distribution_major_version'] <= "10") or (ansible_facts['distribution'] == "Ubuntu" and ansible_facts['distribution_major_version'] <= "21.04")
-
-- name: Create /etc/step-agent directory
-  ansible.builtin.file:
-    path: /etc/step-agent/
-    state: directory
-    owner: root
-    group: root
-    mode: 0755
-
-- name: Create /etc/step-agent/agent.yml
+- name: Create /etc/step-agent/agent.yaml
   ansible.builtin.template:
-    src: agent.yml.j2
-    dest: /etc/step-agent/agent.yml
-    owner: root
-    group: root
+    src: agent.yaml.j2
+    dest: /etc/step-agent/agent.yaml
+    owner: step-agent
+    group: step-agent
     mode: 0644
-  notify: step-agent reload
-
-- name: Create step-agent.service
-  ansible.builtin.template:
-    src: step-agent.service.j2
-    dest: /etc/systemd/system/step-agent.service
-    owner: root
-    group: root
-    mode: 0644
-
-- name: Create step-agent.service.d directory
-  ansible.builtin.file:
-    path: /etc/systemd/system/step-agent.service.d/
-    state: directory
-    owner: root
-    group: root
-    mode: 0755
-
-- name: Create step-agent.service drop-in if step_agent_user_privileged is True
-  ansible.builtin.template:
-    src: step_agent_privileged.conf.j2
-    dest: /etc/systemd/system/step-agent.service.d/override.conf
-    owner: root
-    group: root
-    mode: 0644
-  notify: step-agent restarted
-  when: step_agent_user_privileged
-
-- name: Remove step-agent.service drop-in if step_agent_user_privileged is False
-  ansible.builtin.file:
-    path: /etc/systemd/system/step-agent.service.d/override.conf
-    state: absent
-  notify: step-agent restarted
-  when: not step_agent_user_privileged
+  notify: step-agent reload-or-restart
 
 - name: Start step-agent.service and ensure it is enabled
   ansible.builtin.systemd:

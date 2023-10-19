@@ -1,0 +1,8 @@
+---
+# tasks file for Red Hat based distributions
+
+- name: Install the step-agent-plugin RPM package
+  ansible.builtin.yum:
+    name: "{{ smallstep_agent_download_url }}"
+    state: present
+    disable_gpg_check: true

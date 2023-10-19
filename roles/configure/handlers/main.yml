@@ -1,11 +1,14 @@
 ---
 # handlers file for configure
 - name: step-agent reload
-  service:
+  ansible.builtin.systemd_service:
     name: step-agent
     state: reloaded
 
 - name: step-agent restart
-  service:
+  ansible.builtin.systemd_service:
     name: step-agent
     state: restarted
+
+- name: step-agent reload-or-restart
+  ansible.builtin.command: systemctl reload-or-restart step-agent.service

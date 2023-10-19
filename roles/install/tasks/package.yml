@@ -1,0 +1,39 @@
+---
+# Tasks for detecting OS arch and setting package version
+
+- name: Check for smallstep_agent_version variable and set it to the latest version if not set
+  block:
+    - name: Check GitHub for the latest release of step-agent-plugin
+      become: no
+      delay: 10
+      delegate_to: localhost
+      retries: 5
+      run_once: True
+      ansible.builtin.uri:
+        body_format: json
+        return_content: True
+        url: https://api.github.com/repos/smallstep/step-agent-plugin/releases/latest
+      register: step_agent_github_response
+    - name: Set smallstep_agent_version fact to the latest release
+      ansible.builtin.set_fact:
+        smallstep_agent_version: "{{ step_agent_github_response.json.tag_name }}"
+  when: not smallstep_agent_version
+
+- name: Set step_agent_arch fact
+  ansible.builtin.set_fact:
+    step_agent_arch: "{{ step_agent_arch_map[ansible_architecture] }}"
+
+- name: Set smallstep_agent_package_format fact to RPM
+  ansible.builtin.set_fact:
+    smallstep_agent_package_format: "rpm"
+  when: ansible_os_family == "RedHat"
+
+- name: Set smallstep_agent_package_format fact to Deb
+  ansible.builtin.set_fact:
+    smallstep_agent_package_format: "deb"
+  when: ansible_os_family == "Debian"
+
+- name: Set smallstep_agent_download_url fact to the default download URL if smallstep_agent_download_url is not set
+  ansible.builtin.set_fact:
+    smallstep_agent_download_url: "https://dl.smallstep.com/step-agent-plugin/{{ smallstep_agent_version }}/step-agent-plugin_{{ step_agent_arch }}.{{ smallstep_agent_package_format }}"
+  when: not smallstep_agent_download_url
