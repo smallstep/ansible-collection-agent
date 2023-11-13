@@ -83,7 +83,7 @@ options:
                     - The type of certificate.
                 type: str
                 required: true
-                choices [ X509, SSH_USER, SSH_HOST ]
+                choices: [ X509, SSH_USER, SSH_HOST ]
             uid:
                 description:
                     - UID of the files where the certificate is stored.
@@ -91,7 +91,6 @@ options:
     device_metadata_key_sans:
         description:
             - SANs that will be populated from the instance data of the device in the device collection.
-            - For example, if the device instance data in the collection is {"internal_host": "foo.internal", "external_host", "foo.example.com"} at the time the workload certificate is issued and this field is set to ["internal_host", "external_host"], then the certificate would include the SANs foo.internal and foo.example.com.
         type: dict
         elements: dict
     display_name:
@@ -137,7 +136,7 @@ options:
                     - The key type used.
                     - The current DEFAULT type is ECDSA_P256.
                 type: str
-                choices [ DEFAULT, ECDSA_P256, ECDSA_P384, ECDSA_P521, RSA_2048, RSA_3072, RSA_4096, ED25519 ]
+                choices: [ DEFAULT, ECDSA_P256, ECDSA_P384, ECDSA_P521, RSA_2048, RSA_3072, RSA_4096, ED25519 ]
     reload_info:
         description:
             - The properties used to reload a service.
