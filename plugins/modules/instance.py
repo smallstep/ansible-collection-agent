@@ -38,16 +38,16 @@ options:
     instance_id:
         description:
             - The ID of the instance.
-            - Example AWS: i-0eebba999846bb1 EC2 instance ID
-            - Example GCP: 33322448555564760720 VM instance ID
-            - Example Azure: 6481a05f-1887-4156-ba64-4d1650811b48 This is the instances Managed Identity UUID
-            - Example TPM: urn:ek:sha256:RAzbOveN1Y45fYubuTxu5jOXWtOK1HbfZ7yHjBuWlyE= This is the SHA256 hash of the endorsement key.
+            - Example AWS i-0eebba999846bb1 EC2 instance ID
+            - Example GCP 33322448555564760720 VM instance ID
+            - Example Azure 6481a05f-1887-4156-ba64-4d1650811b48 This is the instances Managed Identity UUID
+            - Example TPM urn ek sha256 RAzbOveN1Y45fYubuTxu5jOXWtOK1HbfZ7yHjBuWlyE This is the SHA256 hash of the endorsement key
             - Required.
         type: str
     instance_metadata:
         description:
             - The metadata on the Device Collection instance.
-            - A list of dictionaries: Name: nginx-01, role: webserver, env: prod
+            - A list of dictionaries Name nginx-01, role webserver, env prod
         type: dict
         default: {}
         elements: dict

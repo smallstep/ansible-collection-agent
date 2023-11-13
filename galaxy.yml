@@ -9,14 +9,13 @@ license_file: 'LICENSE'
 tags:
   - smallstep
   - step
-  - step-cli
-  - step-agent
+  - cli
+  - agent
   - tls
   - mtls
   - pki
   - certificates
 dependencies:
-  smallstep.agent: ">=0.0.1"
   smallstep.cli: ">=0.0.1"
   smallstep.sigstore: ">=0.0.1"
 repository: https://github.com/smallstep/ansible-collection-agent
